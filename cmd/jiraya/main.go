@@ -1,0 +1,5 @@
+package jiraya
+
+func main() {
+
+}
