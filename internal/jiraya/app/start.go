@@ -24,6 +24,7 @@ func (a *app) Start() error {
 	}
 
 	c := core.New(db)
+
 	srv := grpc_gw.New(c)
 
 	grpcListener, err := net.Listen("tcp", a.cfg.GRPC.Port)

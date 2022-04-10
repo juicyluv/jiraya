@@ -1,20 +1,20 @@
 package grpc_gw
 
 import (
+	"github.com/juicyluv/jiraya/internal/jiraya/core"
 	"github.com/juicyluv/jiraya/internal/jiraya/interfaces/grpc_gw/protobuf"
-	"github.com/juicyluv/jiraya/internal/jiraya/storage"
 )
 
-type Server struct {
+type server struct {
 	protobuf.UnimplementedJirayaServer
-	storage storage.Storage
+	core *core.Core
 }
 
-// New returns a new Server instance.
-func New(st storage.Storage) *Server {
-	return &Server{storage: st}
+// New returns a new grpc gateway server instance.
+func New(core *core.Core) *server {
+	return &server{core: core}
 }
 
-func (s *Server) GetStorage() storage.Storage {
-	return s.storage
+func (s *server) Core() *core.Core {
+	return s.core
 }
