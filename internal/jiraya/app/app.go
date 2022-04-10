@@ -4,7 +4,6 @@ import (
 	"github.com/juicyluv/jiraya/internal/jiraya"
 	"github.com/juicyluv/jiraya/internal/jiraya/infrastructure/config"
 	"github.com/juicyluv/jiraya/internal/jiraya/infrastructure/logging"
-	"github.com/juicyluv/jiraya/internal/jiraya/interfaces/grpc_gw"
 	"github.com/juicyluv/jiraya/internal/jiraya/storage"
 	"go.uber.org/zap"
 )
@@ -13,7 +12,6 @@ type app struct {
 	cfg     *config.Config
 	storage storage.Storage
 	logger  *zap.Logger
-	server  *grpc_gw.Server
 }
 
 func New() jiraya.App {
@@ -27,7 +25,7 @@ func New() jiraya.App {
 	}
 }
 
-func (a *app) GetConfig() *config.Config {
+func (a *app) Config() *config.Config {
 	return a.cfg
 }
 
@@ -35,6 +33,6 @@ func (a *app) SetConfig(cfg *config.Config) {
 	a.cfg = cfg
 }
 
-func (a *app) GetStorage() storage.Storage {
+func (a *app) Storage() storage.Storage {
 	return a.storage
 }
