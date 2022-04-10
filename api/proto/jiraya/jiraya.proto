@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package jiraya;
+
+option go_package = "./protobuf";
+
+import "user.proto";
+//import "google/protobuf/timestamp.proto";
+//import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+//import "protoc-gen-openapiv2/options/annotations.proto";
+
+//option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+//  info:{version:"v1.0.0"}
+//  host:"localhost:1337"
+//  schemes:[HTTP]
+//  security_definitions:{
+//    security:{
+//      value:{
+//        in:IN_HEADER
+//        name:"Authorization"
+//        type:TYPE_API_KEY
+//        flow:FLOW_PASSWORD
+//        authorization_url:"/api/v1/auth"
+//      }
+//    }
+//  }
+//  external_docs:{
+//    description:"Описание устройства проекта."
+//    url:"https://gitlab.trueconf.com/server/manager/enterprise/-/wikis/home"
+//  }
+//};
+
+service Jiraya {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users"
+    };
+  }
+}
