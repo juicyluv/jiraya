@@ -13,7 +13,9 @@ create table if not exists users(
 
 create or replace function main.create_user(_username text, _password text)
     returns uuid
-as $$
+    language plpgsql
+as
+$$
 
 declare
     id uuid;
@@ -21,7 +23,7 @@ declare
 
 begin
     id = gen_random_uuid();
-    hashed_password = crypt(_password::varchar, gen_salt('bf', 8));
+    hashed_password = crypt(_password, gen_salt('bf', 8));
 
     insert into users(id, username, password)
         values(id, _username, hashed_password);
@@ -29,8 +31,7 @@ begin
     return id;
 end;
 
-$$
-language plpgsql;
+$$;
 
 create or replace function main.get_user(_id uuid, _username text default null::text, OUT username text, OUT password text, OUT error jsonb) returns record
     stable
@@ -47,7 +48,7 @@ begin
         username,
         password
     from users u
-    where u.id = _id and u.username = _username;
+    where u.id = _id or u.username = _username;
 
     if not found then
         error := jsonb_build_object('code', 1, 'detail', json_build_object('user_id', 5));
@@ -61,4 +62,36 @@ begin
             error := jsonb_build_object('code', -1);
 
 end;
+$$;
+
+create or replace function main.get_user_by_password(_username text, _password text, OUT id uuid, OUT username text, OUT created_at timestamptz, OUT error jsonb) returns record
+
+as
 $$
+begin
+    select
+        u.id,
+        u.username,
+        u.created_at
+    into
+        id,
+        username,
+        created_at
+    from users u
+    where
+        u.username = lower(_username)
+        and u.password = crypt(_password, u.password)
+        and (u.disabled_at is null);
+
+    if not found then
+        error := jsonb_build_object('code', 1, 'detail', jsonb_build_object('user_id', 5));
+        return;
+    end if;
+
+exception
+    when others then
+
+        error := jsonb_build_object('code', -1);
+
+end
+$$ language plpgsql stable security definer;
