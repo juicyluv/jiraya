@@ -1,8 +1,10 @@
 create or replace function main.get_user(
     _id uuid,
     OUT username text,
-    OUT password text,
-    OUT error jsonb)
+    OUT email text,
+    OUT created_at timestamptz,
+    OUT disabled_at timestamptz,
+    OUT error jsonb default null::jsonb)
 
     returns record
     stable
@@ -15,10 +17,14 @@ begin
 
     select
         u.username,
-        u.password
+        u.email,
+        u.created_at,
+        u.disabled_at
     into
         username,
-        password
+        email,
+        created_at,
+        disabled_at
     from users u
     where u.id = _id;
 
@@ -26,8 +32,6 @@ begin
         error := jsonb_build_object('error', 'not found');
         return;
     end if;
-
-    error := jsonb_build_object();
 
 exception
     when others then

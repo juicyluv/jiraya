@@ -18,6 +18,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 create table if not exists users(
     id uuid primary key,
     username text not null unique,
+    email text not null unique,
     password text not null,
     created_at timestamptz default now(),
     disabled_at timestamptz
@@ -33,8 +34,9 @@ create table if not exists users(
 create or replace function main.create_user(
     _username text,
     _password text,
+    _email text,
     OUT id uuid,
-    OUT error jsonb)
+    OUT error jsonb default null::jsonb)
 
     returns record
     language plpgsql
@@ -42,20 +44,18 @@ as
 $$
 
 declare
-    id uuid;
     hashed_password text;
-
 begin
     id = gen_random_uuid();
+
     hashed_password = crypt(_password, gen_salt('bf', 8));
 
-    insert into users(id, username, password)
-        values(id, _username, hashed_password);
-
-    return id;
+    insert into users(id, username, email, password)
+        values(id, lower(_username), _email, hashed_password);
 
     exception
         when others then
+            id = null::uuid;
             error := jsonb_build_object('error', 'internal');
 end;
 
@@ -66,8 +66,10 @@ $$;
 create or replace function main.get_user(
     _id uuid,
     OUT username text,
-    OUT password text,
-    OUT error jsonb)
+    OUT email text,
+    OUT created_at timestamptz,
+    OUT disabled_at timestamptz,
+    OUT error jsonb default null::jsonb)
 
     returns record
     stable
@@ -80,10 +82,14 @@ begin
 
     select
         u.username,
-        u.password
+        u.email,
+        u.created_at,
+        u.disabled_at
     into
         username,
-        password
+        email,
+        created_at,
+        disabled_at
     from users u
     where u.id = _id;
 
@@ -91,8 +97,6 @@ begin
         error := jsonb_build_object('error', 'not found');
         return;
     end if;
-
-    error := jsonb_build_object();
 
     exception
         when others then
@@ -108,9 +112,10 @@ create or replace function main.get_user_by_password(
     _username text,
     _password text,
     OUT id uuid,
-    OUT username text,
+    OUT email text,
     OUT created_at timestamptz,
-    OUT error jsonb)
+    OUT disabled_at timestamptz,
+    OUT error jsonb default null::jsonb)
 returns record
 as
 $$
@@ -118,26 +123,31 @@ $$
 begin
     select
         u.id,
-        u.username,
-        u.created_at
+        u.email,
+        u.created_at,
+        u.disabled_at
     into
-        id,
         username,
-        created_at
+        email,
+        created_at,
+        disabled_at
     from users u
     where
         u.username = lower(_username)
-        and u.password = crypt(_password, u.password)
-        and (u.disabled_at is null);
+        and u.password = crypt(_password, u.password);
 
     if not found then
         error := jsonb_build_object('error', 'not found');
         return;
     end if;
 
+    if disabled_at is not null then
+        error := jsonb_build_object('error', 'disabled');
+        return;
+    end if;
+
 exception
     when others then
-
         error := jsonb_build_object('error', 'internal');
 
 end
