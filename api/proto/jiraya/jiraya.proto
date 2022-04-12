@@ -34,7 +34,8 @@ import "google/api/annotations.proto";
 service Jiraya {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {
-      get: "/api/v1/users"
+      post: "/api/v1/users";
+      body: "*";
     };
   }
 }
