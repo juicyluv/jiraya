@@ -4,9 +4,22 @@ package jiraya;
 
 option go_package = "./protobuf";
 
+import "google/protobuf/timestamp.proto";
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp disabled_at = 5;
+}
+
 message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
 }
 
 message CreateUserResponse {
-  string message = 1;
+  User user = 1;
 }
