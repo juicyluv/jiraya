@@ -1,7 +1,19 @@
 create schema if not exists main;
 
+----------------------------------------------------------------------
+
+-------------------------------EXTENSIONS-----------------------------
+
+----------------------------------------------------------------------
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+----------------------------------------------------------------------
+
+-------------------------------TABLES---------------------------------
+
+----------------------------------------------------------------------
 
 create table if not exists users(
     id uuid primary key,
@@ -11,8 +23,20 @@ create table if not exists users(
     disabled_at timestamptz
 );
 
-create or replace function main.create_user(_username text, _password text)
-    returns uuid
+
+----------------------------------------------------------------------
+
+-------------------------------FUNCTIONS------------------------------
+
+----------------------------------------------------------------------
+
+create or replace function main.create_user(
+    _username text,
+    _password text,
+    OUT id uuid,
+    OUT error jsonb)
+
+    returns record
     language plpgsql
 as
 $$
@@ -29,16 +53,29 @@ begin
         values(id, _username, hashed_password);
 
     return id;
+
+    exception
+        when others then
+            error := jsonb_build_object('error', 'internal');
 end;
 
 $$;
 
-create or replace function main.get_user(_id uuid, _username text default null::text, OUT username text, OUT password text, OUT error jsonb) returns record
+----------------------------------------------------------------------
+
+create or replace function main.get_user(
+    _id uuid,
+    OUT username text,
+    OUT password text,
+    OUT error jsonb)
+
+    returns record
     stable
     strict
     language plpgsql
 as
 $$
+
 begin
 
     select
@@ -48,26 +85,36 @@ begin
         username,
         password
     from users u
-    where u.id = _id or u.username = _username;
+    where u.id = _id;
 
     if not found then
-        error := jsonb_build_object('code', 1, 'detail', json_build_object('user_id', 5));
+        error := jsonb_build_object('error', 'not found');
         return;
     end if;
 
-    error := jsonb_build_object('code', 0);
+    error := jsonb_build_object();
 
     exception
         when others then
-            error := jsonb_build_object('code', -1);
+            error := jsonb_build_object('error', 'internal');
 
 end;
+
 $$;
 
-create or replace function main.get_user_by_password(_username text, _password text, OUT id uuid, OUT username text, OUT created_at timestamptz, OUT error jsonb) returns record
+----------------------------------------------------------------------
 
+create or replace function main.get_user_by_password(
+    _username text,
+    _password text,
+    OUT id uuid,
+    OUT username text,
+    OUT created_at timestamptz,
+    OUT error jsonb)
+returns record
 as
 $$
+
 begin
     select
         u.id,
@@ -84,14 +131,17 @@ begin
         and (u.disabled_at is null);
 
     if not found then
-        error := jsonb_build_object('code', 1, 'detail', jsonb_build_object('user_id', 5));
+        error := jsonb_build_object('error', 'not found');
         return;
     end if;
 
 exception
     when others then
 
-        error := jsonb_build_object('code', -1);
+        error := jsonb_build_object('error', 'internal');
 
 end
+
 $$ language plpgsql stable security definer;
+
+----------------------------------------------------------------------
