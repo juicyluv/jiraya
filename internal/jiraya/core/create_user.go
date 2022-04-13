@@ -5,7 +5,8 @@ import (
 	"github.com/juicyluv/jiraya/internal/jiraya/domain"
 )
 
-func (c *Core) CreateUser(ctx context.Context, request *domain.CreateUserRequest) (*domain.CreateUserResponse, error) {
-	response, err := c.storage.CreateUser(ctx, request)
-	return response, err
+func (c *Core) CreateUser(ctx context.Context, request *domain.CreateUserRequest) (*string, error) {
+	userID, err := c.storage.CreateUser(ctx, request)
+
+	return userID, err
 }

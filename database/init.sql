@@ -1,4 +1,19 @@
-create schema if not exists main;
+revoke all on database postgres, template0, template1 from public;
+
+create user jiraya;
+
+create database jiraya;
+
+grant connect on database jiraya to jiraya;
+
+\connect jiraya
+
+revoke all on schema public from public;
+
+create schema if not exists main authorization postgres;
+grant all on schema main to postgres;
+grant usage on schema main to jiraya;
+
 
 ----------------------------------------------------------------------
 
@@ -36,10 +51,9 @@ create or replace function main.create_user(
     _password text,
     _email text,
     OUT id uuid,
-    OUT error jsonb default null::jsonb)
+    OUT error jsonb)
 
     returns record
-    language plpgsql
 as
 $$
 
@@ -53,13 +67,16 @@ begin
     insert into users(id, username, email, password)
         values(id, lower(_username), _email, hashed_password);
 
+    error := jsonb_build_object();
+
     exception
         when others then
             id = null::uuid;
             error := jsonb_build_object('error', 'internal');
 end;
 
-$$;
+$$
+language plpgsql;
 
 ----------------------------------------------------------------------
 
@@ -69,12 +86,9 @@ create or replace function main.get_user(
     OUT email text,
     OUT created_at timestamptz,
     OUT disabled_at timestamptz,
-    OUT error jsonb default null::jsonb)
+    OUT error jsonb)
 
     returns record
-    stable
-    strict
-    language plpgsql
 as
 $$
 
@@ -104,7 +118,8 @@ begin
 
 end;
 
-$$;
+$$
+language plpgsql;
 
 ----------------------------------------------------------------------
 
@@ -112,10 +127,11 @@ create or replace function main.get_user_by_password(
     _username text,
     _password text,
     OUT id uuid,
+    OUT username text,
     OUT email text,
     OUT created_at timestamptz,
     OUT disabled_at timestamptz,
-    OUT error jsonb default null::jsonb)
+    OUT error jsonb)
 returns record
 as
 $$
@@ -123,10 +139,12 @@ $$
 begin
     select
         u.id,
+        u.username,
         u.email,
         u.created_at,
         u.disabled_at
     into
+        id,
         username,
         email,
         created_at,
@@ -138,11 +156,6 @@ begin
 
     if not found then
         error := jsonb_build_object('error', 'not found');
-        return;
-    end if;
-
-    if disabled_at is not null then
-        error := jsonb_build_object('error', 'disabled');
         return;
     end if;
 

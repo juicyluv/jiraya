@@ -7,5 +7,6 @@ import (
 
 // Storage represents storage interface.
 type Storage interface {
-	CreateUser(ctx context.Context, request *domain.CreateUserRequest) (*domain.CreateUserResponse, error)
+	CreateUser(ctx context.Context, request *domain.CreateUserRequest) (*string, error)
+	GetUser(ctx context.Context, request *domain.GetUserRequest) (*domain.User, error)
 }
