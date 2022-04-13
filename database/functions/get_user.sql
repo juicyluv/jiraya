@@ -4,11 +4,10 @@ create or replace function main.get_user(
     OUT email text,
     OUT created_at timestamptz,
     OUT disabled_at timestamptz,
-    OUT error jsonb default null::jsonb)
+    OUT error jsonb)
 
     returns record
-    stable
-    strict
+
     language plpgsql
 as
 $$
@@ -25,17 +24,19 @@ begin
         email,
         created_at,
         disabled_at
-    from users u
+    from main.users u
     where u.id = _id;
 
     if not found then
-        error := jsonb_build_object('error', 'not found');
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'user not found'));
         return;
     end if;
 
+    error := jsonb_build_object('code', 0);
+
 exception
     when others then
-        error := jsonb_build_object('error', 'internal');
+        error := jsonb_build_object('code', -1);
 
 end;
 
