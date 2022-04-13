@@ -1,5 +1,10 @@
 package postgres
 
 type QueryError struct {
-	Error *string `json:"error"`
+	Code    int32    `json:"code"`
+	Details *details `json:"details"`
+}
+
+type details struct {
+	Msg *string `json:"msg"`
 }
