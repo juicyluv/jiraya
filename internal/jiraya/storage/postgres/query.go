@@ -5,7 +5,21 @@ import (
 	"errors"
 )
 
+const (
+	codeInternal = iota - 1
+	codeSuccess
+	codeFailure
+)
+
+var (
+	ErrInternal = errors.New("internal error")
+)
+
 func handleQueryError(queryError []byte) error {
+	if queryError == nil {
+		return nil
+	}
+
 	e := QueryError{}
 
 	err := json.Unmarshal(queryError, &e)
@@ -14,9 +28,13 @@ func handleQueryError(queryError []byte) error {
 		return err
 	}
 
-	if e.Error == nil {
+	if e.Code == codeSuccess {
 		return nil
 	}
 
-	return errors.New(*e.Error)
+	if e.Details == nil || e.Details.Msg == nil {
+		return ErrInternal
+	}
+
+	return errors.New(*e.Details.Msg)
 }
