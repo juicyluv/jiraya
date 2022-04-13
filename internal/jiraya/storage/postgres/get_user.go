@@ -19,18 +19,14 @@ const getUserSQL = `
 `
 
 func (d *db) GetUser(ctx context.Context, request *domain.GetUserRequest) (*domain.User, error) {
-	rows, err := d.Query(ctx, getUserSQL, request.UserID)
-
-	if err != nil {
-		return nil, err
-	}
+	row := d.QueryRow(ctx, getUserSQL, request.UserID)
 
 	var (
 		user       domain.User
 		queryError []byte
 	)
 
-	err = rows.Scan(
+	err := row.Scan(
 		&user.Username,
 		&user.Email,
 		&user.CreatedAt,
@@ -45,6 +41,8 @@ func (d *db) GetUser(ctx context.Context, request *domain.GetUserRequest) (*doma
 	if err = handleQueryError(queryError); err != nil {
 		return nil, err
 	}
+
+	user.UserID = request.UserID
 
 	return &user, nil
 }
