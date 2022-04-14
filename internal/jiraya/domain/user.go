@@ -23,3 +23,8 @@ type GetUserRequest struct {
 type GetUserResponse struct {
 	User *User `json:"user"`
 }
+
+type GetUserByPasswordRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}

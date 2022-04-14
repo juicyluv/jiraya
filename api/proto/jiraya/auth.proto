@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package jiraya;
+
+option go_package = "./protobuf";
+
+message AuthRequest {
+  string login = 1;
+  string password = 2;
+}
+message AuthResponse {
+  string token = 1;
+}

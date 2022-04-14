@@ -32,11 +32,18 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 create table if not exists main.users(
     id uuid primary key,
-    username text not null unique,
-    email text not null unique,
-    password text not null,
+    username text not null unique check (username != ''),
+    email text not null unique check (email != ''),
+    password text not null check (password != ''),
     created_at timestamptz default now(),
     disabled_at timestamptz
+);
+
+create table if not exists main.user_contacts(
+    id uuid primary key,
+    user_id uuid references main.users(id),
+    contact_name text not null,
+    contact text not null check (contact != '')
 );
 
 
@@ -152,7 +159,7 @@ $$;
 ----------------------------------------------------------------------
 
 create or replace function main.get_user_by_password(
-    _username text,
+    _login text,
     _password text,
     OUT id uuid,
     OUT username text,
@@ -184,7 +191,7 @@ begin
         disabled_at
     from main.users u
     where
-        u.username = lower(_username)
+        (u.username = lower(_login) or u.email = lower(_login))
         and u.password = crypt(_password, u.password);
 
     if not found then
@@ -203,3 +210,58 @@ end
 $$;
 
 ----------------------------------------------------------------------
+
+create or replace function main.create_user_contact(
+    _user_id uuid,
+    _contact_name text,
+    _contact text,
+    OUT id uuid,
+    OUT error jsonb)
+
+    returns record
+
+    language plpgsql
+    strict
+    security definer
+as
+$$
+
+begin
+    if _contact_name = '' or _contact = '' then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact or contact name are empty'));
+        return;
+    end if;
+
+    if not exists (select 1
+                   from main.users u
+                   where u.id = _user_id)
+    then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'user not found'));
+        return;
+    end if;
+
+    if exists(select 1 from main.user_contacts
+              where contact_name = _contact_name)
+    then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact already exists'));
+        return;
+    end if;
+
+    id := gen_random_uuid();
+
+    insert into main.user_contacts(id, user_id, contact_name, contact)
+    values (id, _user_id, _contact_name, _contact);
+
+    error := jsonb_build_object('code', 0);
+
+-- exception
+--     when others then
+--         id := null;
+--         error := jsonb_build_object('code', -1);
+
+end
+
+$$;
+
+----------------------------------------------------------------------
+select error from main.create_user(_username := 'test', _email := 'test@test.com', _password := 'qwerty');
