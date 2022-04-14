@@ -6,6 +6,7 @@ option go_package = "./protobuf";
 
 import "user.proto";
 import "user_contact.proto";
+import "auth.proto";
 
 //import "google/protobuf/timestamp.proto";
 //import "google/protobuf/wrappers.proto";
@@ -58,9 +59,26 @@ service Jiraya {
       get: "/api/v1/user-contact/{contact_id}"
     };
   }
+  rpc GetUserContacts(GetUserContactsRequest) returns (GetUserContactsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/user/{user_id}/contacts"
+    };
+  }
   rpc CreateUserContact(CreateUserContactRequest) returns (GetUserContactResponse) {
     option (google.api.http) = {
       post: "/api/v1/user-contacts"
+      body: "*"
+    };
+  }
+  rpc UpdateUserContact(UpdateUserContactRequest) returns (UpdateUserContactResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/user-contact/{contact_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteUserContact(DeleteUserContactRequest) returns (DeleteUserContactResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/user-contact/{contact_id}"
       body: "*"
     };
   }

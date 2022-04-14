@@ -14,9 +14,15 @@ message UserContact {
 message GetUserContactRequest {
   string contact_id = 1;
 }
-
 message GetUserContactResponse {
   UserContact contact = 1;
+}
+
+message GetUserContactsRequest {
+  string user_id = 1;
+}
+message GetUserContactsResponse {
+  repeated UserContact user_contacts = 1;
 }
 
 message CreateUserContactRequest {
@@ -24,3 +30,15 @@ message CreateUserContactRequest {
   string contact_name = 2;
   string contact = 3;
 }
+
+message UpdateUserContactRequest {
+  string contact_id = 1;
+  optional string contact_name = 2;
+  optional string contact = 3;
+}
+message UpdateUserContactResponse{}
+
+message DeleteUserContactRequest {
+  string contact_id = 1;
+}
+message DeleteUserContactResponse {}
