@@ -205,7 +205,7 @@ exception
     when others then
         error := jsonb_build_object('code', -1);
 
-end
+end;
 
 $$;
 
@@ -254,14 +254,131 @@ begin
 
     error := jsonb_build_object('code', 0);
 
--- exception
---     when others then
---         id := null;
---         error := jsonb_build_object('code', -1);
+exception
+    when others then
+        id := null;
+        error := jsonb_build_object('code', -1);
 
-end
+end;
 
 $$;
 
+----------------------------------------------------------------------
+create or replace function main.get_user_contact(
+    _contact_id uuid,
+    OUT user_id uuid,
+    OUT contact_name text,
+    OUT contact text,
+    OUT error jsonb)
+
+    returns record
+    stable
+    language plpgsql
+as
+$$
+    begin
+        select
+               c.user_id, c.contact_name, c.contact
+        into
+            user_id, contact_name, contact
+        from main.user_contacts c
+        where c.id = _contact_id;
+
+        error := jsonb_build_object('code', 0);
+
+    exception
+        when others then
+            error := jsonb_build_object('code', -1);
+    end;
+$$;
+----------------------------------------------------------------------
+create or replace function main.get_user_contacts(
+    _user_id uuid,
+    OUT contact_id uuid,
+    OUT contact_name text,
+    OUT contact text)
+
+    returns setof record
+    stable
+    language plpgsql
+as
+$$
+begin
+    return query select
+        c.id, c.contact_name, c.contact
+    from main.user_contacts c
+    where c.user_id = _user_id;
+
+exception
+    when others then
+        return query with t as (values(null::uuid,
+                                       null::text,
+                                       null::text))
+        select *
+        from t
+        where 1 = 2;
+end;
+$$;
+----------------------------------------------------------------------
+create or replace function main.update_user_contact(
+    _contact_id uuid,
+    _contact_name text default null::text,
+    _contact text default null::text)
+
+    returns jsonb
+    strict
+    language plpgsql
+as
+$$
+    declare
+        _sqlstr text;
+    begin
+        if not exists(
+            select 1 from main.user_contacts uc where uc.id = _contact_id
+            )
+        then
+            return jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact not found'));
+        end if;
+
+        _sqlstr :=  case when _contact_name is null then '' else ' contact_name = $1,' end ||
+                    case when _contact is null then '' else ' contact = $2,' end;
+
+        if _sqlstr = '' then
+            return jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'invalid arguments'));
+        end if;
+
+        execute _sqlstr;
+
+        return jsonb_build_object('code', 0);
+
+    exception
+        when others then
+            return jsonb_build_object('code', -1);
+    end;
+$$;
+----------------------------------------------------------------------
+create or replace function main.delete_user_contact(_contact_id uuid)
+    returns jsonb
+    strict
+    language plpgsql
+as
+$$
+begin
+    if not exists(
+            select 1 from main.user_contacts uc where uc.id = _contact_id
+        )
+    then
+        return jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact not found'));
+    end if;
+
+    delete from main.user_contacts uc where uc.id = _contact_id;
+
+    return jsonb_build_object('code', 0);
+
+exception
+    when others then
+        return jsonb_build_object('code', -1);
+end;
+$$;
 ----------------------------------------------------------------------
 select error from main.create_user(_username := 'test', _email := 'test@test.com', _password := 'qwerty');
