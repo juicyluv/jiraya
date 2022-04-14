@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package jiraya;
+
+option go_package = "./protobuf";
+
+message UserContact {
+  string contact_id = 1;
+  string user_id = 2;
+  string contact_name = 3;
+  string contact = 4;
+}
+
+message GetUserContactRequest {
+  string contact_id = 1;
+}
+
+message GetUserContactResponse {
+  UserContact contact = 1;
+}
+
+message CreateUserContactRequest {
+  string user_id = 1;
+  string contact_name = 2;
+  string contact = 3;
+}
