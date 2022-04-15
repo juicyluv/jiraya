@@ -46,6 +46,15 @@ create table if not exists main.user_contacts(
     contact text not null check (contact != '')
 );
 
+create table if not exists main.projects(
+    id uuid primary key,
+    title text not null,
+    created_at timestamptz not null default now(),
+    closed_at timestamptz,
+    description text,
+    icon_url text,
+    creator_id uuid not null references main.users(id)
+);
 
 ----------------------------------------------------------------------
 
@@ -210,7 +219,7 @@ end;
 $$;
 
 ----------------------------------------------------------------------
-
+----------------------------------------------------------------------
 create or replace function main.create_user_contact(
     _user_id uuid,
     _contact_name text,
@@ -227,8 +236,13 @@ as
 $$
 
 begin
-    if _contact_name = '' or _contact = '' then
-        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact or contact name are empty'));
+    if _contact_name = '' then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact name is empty'));
+        return;
+    end if;
+
+    if _contact = '' then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'contact is empty'));
         return;
     end if;
 
@@ -378,6 +392,151 @@ begin
 exception
     when others then
         return jsonb_build_object('code', -1);
+end;
+$$;
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+create or replace function main.create_project(
+    _title text,
+    _description text,
+    _creator_id uuid,
+    _icon_url text = null,
+    OUT id uuid,
+    OUT error jsonb)
+
+    returns record
+
+    language plpgsql
+    strict
+    security definer
+as
+$$
+
+begin
+    if _title = '' then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'title is empty'));
+        return;
+    end if;
+
+    if _description = '' then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'description is empty'));
+        return;
+    end if;
+
+    if not exists (select 1
+                   from main.users u
+                   where u.id = _creator_id)
+    then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'user not found'));
+        return;
+    end if;
+
+    id := gen_random_uuid();
+
+    insert into main.projects(id, title, description, creator_id, icon_url)
+    values (id, _title, _description, _creator_id, _icon_url);
+
+    error := jsonb_build_object('code', 0);
+
+exception
+    when others then
+        id := null;
+        error := jsonb_build_object('code', -1);
+
+end;
+
+$$;
+----------------------------------------------------------------------
+create or replace function main.get_project(
+    _project_id uuid,
+    OUT title text,
+    OUT description text,
+    OUT created_at timestamptz,
+    OUT closed_at timestamptz,
+    OUT icon_url text,
+    OUT creator_id uuid,
+    OUT error jsonb)
+
+    returns record
+    stable
+    language plpgsql
+as
+$$
+begin
+    select
+        p.title, p.description, p.created_at, p.closed_at, p.icon_url, p.creator_id
+    into
+        title, description, created_at, closed_at, icon_url, creator_id
+    from main.projects p
+    where p.id = _project_id;
+
+    if not found then
+        error := jsonb_build_object('code', 1, 'details', jsonb_build_object('msg', 'project not found'));
+    end if;
+
+    error := jsonb_build_object('code', 0);
+
+exception
+    when others then
+        error := jsonb_build_object('code', -1);
+end;
+$$;
+----------------------------------------------------------------------
+create or replace function main.get_projects(
+    _user_id uuid default null::uuid,
+    _closed bool default null::bool,
+    _count int = 60,
+    _sort_field text = 'created_at',
+    _sort_order int = 1,
+    _page int = 1,
+    OUT project_id uuid,
+    OUT title text,
+    OUT description text,
+    OUT created_at timestamptz,
+    OUT closed_at timestamptz,
+    OUT icon_url text,
+    OUT creator_id uuid)
+
+    returns setof record
+    stable
+    language plpgsql
+as
+$$
+declare
+    _sqlstr text;
+begin
+    _sqlstr := 'SELECT
+                    p.id,
+                    p.title,
+                    p.description,
+                    p.created_at,
+                    p.closed_at,
+                    p.icon_url,
+                    p.creator_id
+                 FROM main.projects p
+                 WHERE ' ||
+
+                case when _user_id is not null then ' p.creator_id = $1 ' else '' end ||
+                case when _closed is not null then ' AND p.closed_at is null ' else '' end ||
+                ' ORDER BY ' || quote_ident(trim(lower(_sort_field))) ||
+                case when _sort_order = 1 then 'ASC' else 'DESC NULLS LAST ' end ||
+                case when _count = 0 then '' else 'LIMIT $2 OFFSET $2*($3 - 1)' end;
+
+    return query execute _sqlstr
+    using _user_id, _count, _page;
+
+exception
+    when others then
+        return query with t as (values(null::uuid,
+                                       null::text,
+                                       null::text,
+                                       null::timestamptz,
+                                       null::timestamptz,
+                                       null::text,
+                                       null::uuid))
+                     select *
+                     from t
+                     where 1 = 2;
 end;
 $$;
 ----------------------------------------------------------------------
