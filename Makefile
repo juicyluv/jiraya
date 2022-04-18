@@ -1,5 +1,6 @@
 proto_out_path = internal/jiraya/interfaces/grpc_gw
-proto_path = api/proto/jiraya/*.proto
+protofile_path = api/proto/jiraya/*.proto
+proto_path = api/proto/jiraya
 
 .PHONY: proto
 proto:
@@ -11,8 +12,17 @@ proto:
 		--grpc-gateway_opt=module=${module} \
 		--grpc-gateway_opt=generate_unbound_methods=true \
 		--grpc-gateway_opt=allow_delete_body=true \
-		-Iapi/proto/jiraya \
-        $(proto_path)
+		-I$(proto_path) \
+        $(protofile_path)
+
+.PHONY: doc
+doc:
+	protoc \
+		--openapiv2_out=web/apidoc/v1 \
+		--openapiv2_opt use_go_templates=true \
+		--openapiv2_opt json_names_for_fields=false \
+		--openapiv2_opt allow_delete_body=true \
+		$(protofile_path)
 
 .PHONY: build
 build:

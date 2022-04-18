@@ -7,7 +7,7 @@ type User struct {
 	Username   string     `json:"username"`
 	Email      string     `json:"email"`
 	CreatedAt  time.Time  `json:"created_at"`
-	DisabledAt *time.Time `json:"disabled_at"`
+	DisabledAt *time.Time `json:"disabled_at,omitempty"`
 }
 
 type CreateUserRequest struct {

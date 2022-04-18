@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package jiraya;
+
+option go_package = "./protobuf";
+
+import "google/protobuf/timestamp.proto";
+
+message Project {
+  string project_id = 1;
+  string title = 2;
+  string creator_id = 3;
+  optional string description = 4;
+  optional string icon_url = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp closed_at = 7;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+message CreateProjectRequest {
+  string title = 1;
+  string creator_id = 2;
+  optional string description = 3;
+  optional string icon_url = 4;
+}
+
+message UpdateProjectRequest {
+  string project_id = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional string icon_url = 4;
+}
+message UpdateProjectResponse{}
+
+message DeleteProjectRequest {
+  string project_id = 1;
+}
+message DeleteProjectResponse{}
+
+message CloseProjectRequest {
+  string project_id = 1;
+}
+message CloseProjectResponse{}

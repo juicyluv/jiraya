@@ -8,7 +8,7 @@ import (
 //language=PostgreSQL
 const createUserContactSQL = `
 	select
-		id,
+		contact_id,
 	    error
 	from main.create_user_contact(
 	    _user_id := $1,
