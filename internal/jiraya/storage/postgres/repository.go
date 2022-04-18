@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/juicyluv/jiraya/internal/jiraya/infrastructure/config"
 	"github.com/juicyluv/jiraya/internal/jiraya/infrastructure/logging"
@@ -23,6 +24,10 @@ func New(cfg *config.Config) (storage.Storage, error) {
 		return nil, fmt.Errorf("cannot parse postgres config: %v\n", err)
 	}
 
+	logger := logging.Get()
+
+	pgxPoolConfig.ConnConfig.Logger = zapadapter.NewLogger(logger)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.DB.ConnectionTimeout)*time.Second)
 	defer cancel()
 
@@ -38,5 +43,5 @@ func New(cfg *config.Config) (storage.Storage, error) {
 		return nil, fmt.Errorf("cannot ping postgres: %v\n", err)
 	}
 
-	return &db{pool, logging.Get()}, nil
+	return &db{pool, logger}, nil
 }

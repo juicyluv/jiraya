@@ -40,5 +40,7 @@ func (d *db) GetUserContact(ctx context.Context, request *domain.GetUserContactR
 		return nil, err
 	}
 
+	contact.ContactID = request.ContactID
+
 	return &contact, nil
 }

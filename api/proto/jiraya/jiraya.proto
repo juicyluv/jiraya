@@ -7,32 +7,29 @@ option go_package = "./protobuf";
 import "user.proto";
 import "user_contact.proto";
 import "auth.proto";
+import "project.proto";
 
 //import "google/protobuf/timestamp.proto";
 //import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
-//import "protoc-gen-openapiv2/options/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
-//option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-//  info:{version:"v1.0.0"}
-//  host:"localhost:1337"
-//  schemes:[HTTP]
-//  security_definitions:{
-//    security:{
-//      value:{
-//        in:IN_HEADER
-//        name:"Authorization"
-//        type:TYPE_API_KEY
-//        flow:FLOW_PASSWORD
-//        authorization_url:"/api/v1/auth"
-//      }
-//    }
-//  }
-//  external_docs:{
-//    description:"Описание устройства проекта."
-//    url:"https://gitlab.trueconf.com/server/manager/enterprise/-/wikis/home"
-//  }
-//};
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info:{version:"v1.0.0"}
+  host:"localhost:1337"
+  schemes:[HTTP]
+  security_definitions:{
+    security:{
+      value:{
+        in:IN_HEADER
+        name:"Authorization"
+        type:TYPE_API_KEY
+        flow:FLOW_PASSWORD
+        authorization_url:"/api/v1/auth"
+      }
+    }
+  }
+};
 
 service Jiraya {
   rpc Auth(AuthRequest) returns (AuthResponse) {
@@ -42,6 +39,7 @@ service Jiraya {
     };
   }
 
+  // USER
   rpc CreateUser(CreateUserRequest) returns (GetUserResponse) {
     option (google.api.http) = {
       post: "/api/v1/users";
@@ -50,13 +48,14 @@ service Jiraya {
   }
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
     option (google.api.http) = {
-      get: "/api/v1/user/{user_id}"
+      get: "/api/v1/users/{user_id}"
     };
   }
 
+  // USER CONTACT
   rpc GetUserContact(GetUserContactRequest) returns (GetUserContactResponse) {
     option (google.api.http) = {
-      get: "/api/v1/user-contact/{contact_id}"
+      get: "/api/v1/user-contacts/{contact_id}"
     };
   }
   rpc GetUserContacts(GetUserContactsRequest) returns (GetUserContactsResponse) {
@@ -72,14 +71,43 @@ service Jiraya {
   }
   rpc UpdateUserContact(UpdateUserContactRequest) returns (UpdateUserContactResponse) {
     option (google.api.http) = {
-      patch: "/api/v1/user-contact/{contact_id}"
+      patch: "/api/v1/user-contacts/{contact_id}"
       body: "*"
     };
   }
   rpc DeleteUserContact(DeleteUserContactRequest) returns (DeleteUserContactResponse) {
     option (google.api.http) = {
-      delete: "/api/v1/user-contact/{contact_id}"
+      delete: "/api/v1/user-contacts/{contact_id}"
       body: "*"
+    };
+  }
+
+  // PROJECT
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{project_id}"
+    };
+  }
+  rpc CreateProject(CreateProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/projects"
+      body: "*"
+    };
+  }
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/projects/{project_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/{project_id}"
+    };
+  }
+  rpc CloseProject(CloseProjectRequest) returns (CloseProjectResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/projects/{project_id}/close"
     };
   }
 }
