@@ -56,6 +56,25 @@ create table if not exists main.projects(
     creator_id uuid not null references main.users(id)
 );
 
+create table if not exists main.project_invites(
+    id uuid primary key,
+    project_id uuid not null references main.projects(id),
+    user_id uuid not null references main.users(id),
+    created_at timestamptz not null default now(),
+    accepted_at timestamptz,
+    denied_at timestamptz,
+    inviter_id uuid not null references main.users(id)
+);
+
+create table if not exists main.project_participants(
+    project_id uuid not null references main.projects(id),
+    user_id uuid not null references main.users(id),
+    inviter_id uuid not null references main.users(id),
+    entered_at timestamptz not null default now(),
+    leaved_at timestamptz,
+    leave_reason int2
+);
+
 ----------------------------------------------------------------------
 
 -------------------------------FUNCTIONS------------------------------
